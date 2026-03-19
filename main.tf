@@ -7,7 +7,6 @@ terraform {
     bucket         = "my-terraform-state-styop-1987"
     key            = "dev/terraform.tfstate"
     region         = "us-east-1"
-    dynamodb_table = "terraform-lock"
   }
 }
 
