@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy Terraform Versioned
 
 on:
   push:
@@ -23,8 +23,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Set version automatically
+        run: |
+          # Read last tag from Git
+          VERSION=$(git describe --tags --abbrev=0)
+          # Increment minor version
+          NEW_VERSION=$(echo $VERSION | awk -F. '{$2=$2+1; print $1"."$2".0"}')
+          echo "vpc_version=$NEW_VERSION" >> terraform.tfvars
+
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve
+        run: terraform apply -auto-approve -var-file=terraform.tfvars
