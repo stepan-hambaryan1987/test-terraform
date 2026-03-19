@@ -10,12 +10,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2️⃣ Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
 
+      # 3️⃣ Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -23,16 +26,39 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # 4️⃣ Determine version
       - name: Set version automatically
         run: |
-          # Read last tag from Git
-          VERSION=$(git describe --tags --abbrev=0)
+          # Get last Git tag, start at 0.0.0 if none
+          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
+            VERSION=$(git describe --tags --abbrev=0)
+          else
+            VERSION="0.0.0"
+          fi
+
           # Increment minor version
           NEW_VERSION=$(echo $VERSION | awk -F. '{$2=$2+1; print $1"."$2".0"}')
-          echo "vpc_version=$NEW_VERSION" >> terraform.tfvars
 
+          # Save to terraform.tfvars
+          echo "vpc_version=\"$NEW_VERSION\"" > terraform.tfvars
+          echo "Terraform version: $NEW_VERSION"
+
+      # 5️⃣ Terraform Init
       - name: Terraform Init
         run: terraform init
 
+      # 6️⃣ Terraform Plan (optional, for debugging)
+      - name: Terraform Plan
+        run: terraform plan -var-file=terraform.tfvars
+
+      # 7️⃣ Terraform Apply
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file=terraform.tfvars
+
+      # 8️⃣ Optional: Tag the new version in Git
+      - name: Tag new version in Git
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a $NEW_VERSION -m "Terraform version $NEW_VERSION"
+          git push origin $NEW_VERSION
