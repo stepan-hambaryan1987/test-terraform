@@ -15,7 +15,8 @@ resource "aws_vpc" "main" {
   instance_tenancy = "default"
 
   tags = {
-    Name = "main-vpc"
-    env  = "styop"
+    Name  = "main-vpc"
+    env   = "styop"
+    awner = "arevik"
   }
 }
