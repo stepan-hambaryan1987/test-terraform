@@ -2,11 +2,11 @@ provider "aws" {
   region = "us-east-1"
 }
 
-resource "aws_instance" "example" {
-  ami           = "ami-0ec10929233384c7f" 
-  instance_type = "t3.micro"
+resource "aws_vpc" "main" {
+  cidr_block       = "10.0.0.0/16"
+  instance_tenancy = "default"
 
   tags = {
-    Name = "MyAutoInstance"
+    Name = "main-vpc"
   }
 }
