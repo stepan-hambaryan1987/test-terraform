@@ -10,9 +10,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
+      # 1️⃣ Checkout repo with full history and tags
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Important to get all tags
 
       # 2️⃣ Setup Terraform
       - name: Setup Terraform
@@ -43,11 +45,14 @@ jobs:
           echo "vpc_version=\"$NEW_VERSION\"" > terraform.tfvars
           echo "Terraform version: $NEW_VERSION"
 
+          # Persist NEW_VERSION for next steps
+          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
+
       # 5️⃣ Terraform Init
       - name: Terraform Init
         run: terraform init
 
-      # 6️⃣ Terraform Plan (optional, for debugging)
+      # 6️⃣ Terraform Plan (optional)
       - name: Terraform Plan
         run: terraform plan -var-file=terraform.tfvars
 
@@ -61,10 +66,14 @@ jobs:
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
-          # Check if tag exists
-          if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
-            echo "Tag $NEW_VERSION already exists, skipping tag creation."
+          # Only tag if NEW_VERSION is not empty
+          if [ -n "$NEW_VERSION" ]; then
+            if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
+              echo "Tag $NEW_VERSION already exists, skipping tag creation."
+            else
+              git tag -a "$NEW_VERSION" -m "Terraform version $NEW_VERSION"
+              git push origin "$NEW_VERSION"
+            fi
           else
-            git tag -a "$NEW_VERSION" -m "Terraform version $NEW_VERSION"
-            git push origin "$NEW_VERSION"
+            echo "NEW_VERSION is empty, skipping tag creation."
           fi
