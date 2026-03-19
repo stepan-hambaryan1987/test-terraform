@@ -60,5 +60,11 @@ jobs:
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
-          git tag -a $NEW_VERSION -m "Terraform version $NEW_VERSION"
-          git push origin $NEW_VERSION
+
+          # Check if tag exists
+          if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
+            echo "Tag $NEW_VERSION already exists, skipping tag creation."
+          else
+            git tag -a "$NEW_VERSION" -m "Terraform version $NEW_VERSION"
+            git push origin "$NEW_VERSION"
+          fi
