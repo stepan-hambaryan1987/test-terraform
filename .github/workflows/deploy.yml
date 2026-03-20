@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Important to get all tags
-          token: ${{ secrets.PAT_GITHUB }}
+          
 
       # 2️⃣ Setup Terraform
       - name: Setup Terraform
@@ -29,26 +29,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # 4️⃣ Determine version
-      - name: Set version automatically
-        run: |
-          # Get last Git tag, start at 0.0.0 if none
-          if git describe --tags --abbrev=0 >/dev/null 2>&1; then
-            VERSION=$(git describe --tags --abbrev=0)
-          else
-            VERSION="0.0.0"
-          fi
-
-          # Increment minor version
-          NEW_VERSION=$(echo $VERSION | awk -F. '{$2=$2+1; print $1"."$2".0"}')
-
-          # Save to terraform.tfvars
-          echo "vpc_version=\"$NEW_VERSION\"" > terraform.tfvars
-          echo "Terraform version: $NEW_VERSION"
-
-          # Persist NEW_VERSION for next steps
-          echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
-
+      
       # 5️⃣ Terraform Init
       - name: Terraform Init
         run: terraform init
@@ -61,20 +42,4 @@ jobs:
       - name: Terraform Apply
         run: terraform apply -auto-approve -var-file=terraform.tfvars
 
-      # 8️⃣ Optional: Tag the new version in Git
-      - name: Tag new version in Git
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-          # Only tag if NEW_VERSION is not empty
-          if [ -n "$NEW_VERSION" ]; then
-            if git rev-parse "$NEW_VERSION" >/dev/null 2>&1; then
-              echo "Tag $NEW_VERSION already exists, skipping tag creation."
-            else
-              git tag -a "$NEW_VERSION" -m "Terraform version $NEW_VERSION"
-              git push origin "$NEW_VERSION"
-            fi
-          else
-            echo "NEW_VERSION is empty, skipping tag creation."
-          fi
+      
